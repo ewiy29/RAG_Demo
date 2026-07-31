@@ -190,7 +190,7 @@ All settings are environment variables (prefix `RAG_`, except the standard
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `OPENAI_API_KEY` | – | OpenAI key (required to run the real service). |
-| `RAG_CHAT_MODEL` | `gpt-4o-mini` | Chat model. |
+| `RAG_CHAT_MODEL` | `gpt-5.4-mini` | Chat model. |
 | `RAG_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model. |
 | `RAG_CHAT_TEMPERATURE` | `0.0` | Sampling temperature (0 = deterministic, the right default for grounded RAG). |
 | `RAG_REQUEST_TIMEOUT_SECONDS` | `30.0` | Per-request timeout for provider calls. |
