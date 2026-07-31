@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
@@ -13,6 +11,8 @@ import SendIcon from "@mui/icons-material/Send";
 import { resetConversation } from "../api/client";
 import { useChat } from "../hooks/useChat";
 import { errorMessage } from "../lib/errorMessage";
+import { EmptyState } from "../styles/shared";
+import { Composer, HeaderRow, SendButton, Transcript } from "./ChatPanel.styled";
 import { MessageBubble, type ChatMessage } from "./MessageBubble";
 
 let nextId = 0;
@@ -96,10 +96,7 @@ export function ChatPanel() {
 
   return (
     <Stack sx={{ height: "100%" }}>
-      <Stack
-        direction="row"
-        sx={{ mb: 1, alignItems: "center", justifyContent: "space-between" }}
-      >
+      <HeaderRow direction="row">
         <Typography variant="h6">Chat</Typography>
         <Tooltip title="Start a new conversation">
           <span>
@@ -113,37 +110,17 @@ export function ChatPanel() {
             </IconButton>
           </span>
         </Tooltip>
-      </Stack>
+      </HeaderRow>
 
-      <Box
-        ref={scrollRef}
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          borderRadius: 2,
-          bgcolor: "action.hover",
-          p: 2,
-        }}
-      >
+      <Transcript ref={scrollRef}>
         {messages.length === 0 ? (
-          <Box
-            sx={{
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "text.secondary",
-              textAlign: "center",
-            }}
-          >
+          <EmptyState sx={{ height: "100%" }}>
             <ChatBubbleOutlineIcon sx={{ fontSize: 40, opacity: 0.5 }} />
             <Typography variant="body2" sx={{ mt: 1, maxWidth: 320 }}>
               Ask a question about your uploaded documents. Answers are grounded
               in your files and cite their sources.
             </Typography>
-          </Box>
+          </EmptyState>
         ) : (
           <Stack spacing={1.5}>
             {messages.map((m) => (
@@ -151,9 +128,9 @@ export function ChatPanel() {
             ))}
           </Stack>
         )}
-      </Box>
+      </Transcript>
 
-      <Stack direction="row" spacing={1} sx={{ mt: 1.5, alignItems: "flex-end" }}>
+      <Composer direction="row" spacing={1}>
         <TextField
           fullWidth
           multiline
@@ -166,16 +143,15 @@ export function ChatPanel() {
           disabled={chat.isPending}
           aria-label="Chat message"
         />
-        <Button
+        <SendButton
           variant="contained"
           endIcon={<SendIcon />}
           onClick={send}
           disabled={chat.isPending || draft.trim().length === 0}
-          sx={{ height: 40 }}
         >
           Send
-        </Button>
-      </Stack>
+        </SendButton>
+      </Composer>
     </Stack>
   );
 }

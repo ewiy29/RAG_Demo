@@ -1,10 +1,10 @@
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
-import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import { alpha, useTheme } from "@mui/material/styles";
+
+import { Dropzone } from "./FileDropzone.styled";
 
 const ACCEPT = {
   "text/markdown": [".md"],
@@ -20,8 +20,6 @@ interface FileDropzoneProps {
 
 /** Accessible drag-and-drop upload area restricted to supported file types. */
 export function FileDropzone({ onFiles, busy = false, compact = false }: FileDropzoneProps) {
-  const theme = useTheme();
-
   const onDrop = useCallback(
     (accepted: File[]) => {
       if (accepted.length > 0) {
@@ -38,26 +36,14 @@ export function FileDropzone({ onFiles, busy = false, compact = false }: FileDro
   });
 
   return (
-    <Box
+    <Dropzone
       {...getRootProps()}
       role="button"
       aria-label="Upload documents by dragging files here or clicking to browse"
       aria-disabled={busy}
-      sx={{
-        border: "2px dashed",
-        borderColor: isDragActive ? "primary.main" : "divider",
-        borderRadius: 2,
-        p: compact ? 2 : 4,
-        textAlign: "center",
-        cursor: busy ? "default" : "pointer",
-        transition: "border-color 120ms, background-color 120ms",
-        bgcolor: isDragActive
-          ? alpha(theme.palette.primary.main, 0.06)
-          : "transparent",
-        outline: "none",
-        "&:hover": { borderColor: busy ? "divider" : "primary.light" },
-        "&:focus-visible": { borderColor: "primary.main" },
-      }}
+      $active={isDragActive}
+      $busy={busy}
+      $compact={compact}
     >
       <input {...getInputProps()} />
       {busy ? (
@@ -83,6 +69,6 @@ export function FileDropzone({ onFiles, busy = false, compact = false }: FileDro
           Supported: .md, .txt, .pdf
         </Typography>
       )}
-    </Box>
+    </Dropzone>
   );
 }

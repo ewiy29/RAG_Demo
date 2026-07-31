@@ -1,12 +1,11 @@
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
-import Paper from "@mui/material/Paper";
-import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import BlockIcon from "@mui/icons-material/Block";
 import VerifiedIcon from "@mui/icons-material/Verified";
 
 import type { Citation } from "../api/types";
+import { Bubble, BubbleRow } from "./MessageBubble.styled";
 import { Citations } from "./Citations";
 
 export interface ChatMessage {
@@ -30,26 +29,12 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
   return (
-    <Stack
-      direction="row"
-      sx={{ width: "100%", justifyContent: isUser ? "flex-end" : "flex-start" }}
-    >
-      <Paper
+    <BubbleRow direction="row" $isUser={isUser}>
+      <Bubble
         variant={isUser ? "elevation" : "outlined"}
         elevation={isUser ? 2 : 0}
-        sx={{
-          maxWidth: "85%",
-          px: 2,
-          py: 1.25,
-          bgcolor: isUser
-            ? "primary.main"
-            : message.error
-              ? "error.main"
-              : "background.paper",
-          color: isUser || message.error ? "primary.contrastText" : "text.primary",
-          borderTopRightRadius: isUser ? 4 : undefined,
-          borderTopLeftRadius: isUser ? undefined : 4,
-        }}
+        $isUser={isUser}
+        $isError={message.error}
       >
         {!isUser && !message.error && !message.pending && (
           <Box sx={{ mb: 0.5 }}>
@@ -83,7 +68,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         {!isUser && message.citations && message.citations.length > 0 && (
           <Citations citations={message.citations} />
         )}
-      </Paper>
-    </Stack>
+      </Bubble>
+    </BubbleRow>
   );
 }

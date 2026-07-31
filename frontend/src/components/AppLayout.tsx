@@ -1,12 +1,11 @@
 import type { ReactNode } from "react";
-import AppBar from "@mui/material/AppBar";
-import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
-import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
+
+import { AppRoot, ContentPanel, HeaderBar, SidebarPanel } from "./AppLayout.styled";
 
 interface AppLayoutProps {
   documents: ReactNode;
@@ -16,8 +15,8 @@ interface AppLayoutProps {
 /** Responsive two-pane shell: documents on the left, chat on the right. */
 export function AppLayout({ documents, chat }: AppLayoutProps) {
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <AppBar position="static" color="default" elevation={0} sx={{ borderBottom: "1px solid", borderColor: "divider" }}>
+    <AppRoot>
+      <HeaderBar position="static" color="default" elevation={0}>
         <Toolbar variant="dense">
           <AutoAwesomeIcon color="primary" sx={{ mr: 1 }} />
           <Typography variant="h6" component="h1" sx={{ flexGrow: 1 }}>
@@ -27,7 +26,7 @@ export function AppLayout({ documents, chat }: AppLayoutProps) {
             Grounded answers with citations
           </Typography>
         </Toolbar>
-      </AppBar>
+      </HeaderBar>
 
       <Container
         maxWidth="lg"
@@ -38,33 +37,10 @@ export function AppLayout({ documents, chat }: AppLayoutProps) {
           spacing={2}
           sx={{ flex: 1, minHeight: 0, width: "100%" }}
         >
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 2,
-              width: { xs: "100%", md: 360 },
-              flexShrink: 0,
-              minHeight: { xs: 280, md: 0 },
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {documents}
-          </Paper>
-          <Paper
-            variant="outlined"
-            sx={{
-              p: 2,
-              flex: 1,
-              minHeight: { xs: 400, md: 0 },
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {chat}
-          </Paper>
+          <SidebarPanel variant="outlined">{documents}</SidebarPanel>
+          <ContentPanel variant="outlined">{chat}</ContentPanel>
         </Stack>
       </Container>
-    </Box>
+    </AppRoot>
   );
 }

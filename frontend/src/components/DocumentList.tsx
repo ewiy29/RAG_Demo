@@ -10,7 +10,6 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
 import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import Skeleton from "@mui/material/Skeleton";
 import Stack from "@mui/material/Stack";
@@ -25,6 +24,8 @@ import { useUpload } from "../hooks/useUpload";
 import { useDeleteDocument } from "../hooks/useDeleteDocument";
 import type { FileError } from "../api/types";
 import { codeMessage, errorMessage } from "../lib/errorMessage";
+import { EmptyState, ScrollArea } from "../styles/shared";
+import { DocumentRow } from "./DocumentList.styled";
 import { FileDropzone } from "./FileDropzone";
 
 /** Left pane: upload area + the list of the user's ingested documents. */
@@ -110,7 +111,7 @@ export function DocumentList() {
         </Alert>
       )}
 
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+      <ScrollArea>
         {documents.isLoading ? (
           <Stack spacing={1} sx={{ mt: 1 }}>
             {[0, 1, 2].map((i) => (
@@ -126,29 +127,22 @@ export function DocumentList() {
             {errorMessage(documents.error)}
           </Alert>
         ) : docs.length === 0 ? (
-          <Box
-            sx={{
-              mt: 2,
-              textAlign: "center",
-              color: "text.secondary",
-              py: 4,
-            }}
-          >
+          <EmptyState sx={{ mt: 2, py: 4 }}>
             <DescriptionOutlinedIcon sx={{ fontSize: 36, opacity: 0.5 }} />
             <Typography variant="body2" sx={{ mt: 1 }}>
               No documents yet — drop files above to start.
             </Typography>
-          </Box>
+          </EmptyState>
         ) : (
           <List dense disablePadding>
             {docs.map((doc) => {
               const isDeleting =
                 remove.isPending && remove.variables === doc.source;
               return (
-                <ListItem
+                <DocumentRow
                   key={doc.source}
                   divider
-                  sx={{ opacity: isDeleting ? 0.5 : 1 }}
+                  $deleting={isDeleting}
                   secondaryAction={
                     <Stack direction="row" spacing={0.5}>
                       <Tooltip title="Replace this file">
@@ -193,12 +187,12 @@ export function DocumentList() {
                       secondary: { component: "div" },
                     }}
                   />
-                </ListItem>
+                </DocumentRow>
               );
             })}
           </List>
         )}
-      </Box>
+      </ScrollArea>
 
       {remove.isError && (
         <Alert severity="error" onClose={() => remove.reset()}>

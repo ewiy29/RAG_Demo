@@ -1,7 +1,4 @@
-import Accordion from "@mui/material/Accordion";
 import AccordionDetails from "@mui/material/AccordionDetails";
-import AccordionSummary from "@mui/material/AccordionSummary";
-import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
@@ -9,6 +6,12 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FormatQuoteIcon from "@mui/icons-material/FormatQuote";
 
 import type { Citation } from "../api/types";
+import {
+  CitationAccordion,
+  CitationItem,
+  CitationSummary,
+  Quote,
+} from "./Citations.styled";
 
 interface CitationsProps {
   citations: Citation[];
@@ -21,35 +24,16 @@ export function Citations({ citations }: CitationsProps) {
   }
 
   return (
-    <Accordion
-      disableGutters
-      elevation={0}
-      sx={{
-        mt: 1,
-        bgcolor: "transparent",
-        "&:before": { display: "none" },
-      }}
-    >
-      <AccordionSummary
-        expandIcon={<ExpandMoreIcon />}
-        sx={{ minHeight: 0, px: 0, "& .MuiAccordionSummary-content": { my: 0.5 } }}
-      >
+    <CitationAccordion disableGutters elevation={0}>
+      <CitationSummary expandIcon={<ExpandMoreIcon />}>
         <Typography variant="caption" color="text.secondary">
           {citations.length} source{citations.length === 1 ? "" : "s"}
         </Typography>
-      </AccordionSummary>
+      </CitationSummary>
       <AccordionDetails sx={{ px: 0, pt: 0 }}>
         <Stack spacing={1}>
           {citations.map((c) => (
-            <Box
-              key={`${c.source}#${c.chunk_index}:${c.marker}`}
-              sx={{
-                borderLeft: "3px solid",
-                borderColor: "primary.light",
-                pl: 1.5,
-                py: 0.5,
-              }}
-            >
+            <CitationItem key={`${c.source}#${c.chunk_index}:${c.marker}`}>
               <Stack
                 direction="row"
                 spacing={1}
@@ -64,17 +48,14 @@ export function Citations({ citations }: CitationsProps) {
                   score {c.score.toFixed(3)}
                 </Typography>
               </Stack>
-              <Typography
-                variant="body2"
-                sx={{ mt: 0.5, fontStyle: "italic", color: "text.secondary" }}
-              >
+              <Quote variant="body2">
                 <FormatQuoteIcon sx={{ fontSize: 14, mr: 0.5, opacity: 0.6 }} />
                 {c.quote}
-              </Typography>
-            </Box>
+              </Quote>
+            </CitationItem>
           ))}
         </Stack>
       </AccordionDetails>
-    </Accordion>
+    </CitationAccordion>
   );
 }
