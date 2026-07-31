@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     persist_dir: str = ".chroma"
     collection: str = "rag_demo"
 
+    # Where the API writes uploaded documents before ingesting them.
+    upload_dir: str = "uploads"
+
     # Retrieval / chunking tuning.
     top_k: int = 4
     min_score: float = 0.2
