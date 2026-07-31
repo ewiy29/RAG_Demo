@@ -22,7 +22,7 @@ import math
 from dataclasses import dataclass
 from typing import Any, Sequence
 
-from rag.vectorstore.base import ChunkMetadata, ChunkRecord, QueryHit
+from rag.vectorstore.base import ChunkMetadata, ChunkRecord, QueryHit, SourceInfo
 
 
 @dataclass
@@ -129,6 +129,18 @@ class InMemoryVectorStore:
         ]
         for id_ in doomed:
             del self._records[id_]
+
+    async def list_sources(self, user_id: str) -> list[SourceInfo]:
+        counts: dict[str, int] = {}
+        for rec in self._records.values():
+            if rec.metadata.user_id != user_id:
+                continue
+            source = rec.metadata.source
+            counts[source] = counts.get(source, 0) + 1
+        return [
+            SourceInfo(source=source, chunks=count)
+            for source, count in sorted(counts.items())
+        ]
 
     async def delete_expired(self, cutoff_epoch: float) -> None:
         doomed = [

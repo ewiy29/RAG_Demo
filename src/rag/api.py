@@ -1,5 +1,7 @@
-"""FastAPI surface: /health, /ingest, /ask, DELETE /documents, and the
-multi-turn conversation endpoints (/chat, GET/DELETE /conversations).
+"""FastAPI surface: /health, /ingest, /ask, GET /documents (list a user's
+ingested sources), DELETE /documents (purge all) / DELETE /documents/{source}
+(per-file), and the multi-turn conversation endpoints (/chat, GET/DELETE
+/conversations).
 
 The pipeline is built once on startup and stored on ``app.state`` so requests
 share a single vector store, provider pair, and conversation store.
@@ -167,6 +169,24 @@ class IngestResponseModel(BaseModel):
 class PurgeResponseModel(BaseModel):
     user_id: str
     status: str = "purged"
+
+
+class DocumentModel(BaseModel):
+    """One ingested source with its stored chunk count."""
+
+    source: str
+    chunks: int
+
+
+class DocumentListModel(BaseModel):
+    user_id: str
+    documents: list[DocumentModel] = Field(default_factory=list)
+
+
+class DeleteDocumentResponseModel(BaseModel):
+    user_id: str
+    source: str
+    status: str = "deleted"
 
 
 class ChatRequest(BaseModel):
@@ -432,6 +452,24 @@ def create_app(
             latency_ms=resp.latency_ms,
         )
 
+    @app.get("/documents", response_model=DocumentListModel)
+    async def list_documents(
+        request: Request,
+        response: Response,
+        pipe: RagPipeline = Depends(get_pipeline),
+    ) -> DocumentListModel:
+        """List the requesting user's ingested sources (for the manage-files UI)."""
+
+        user_id = _resolve_user_id(request)
+        response.headers[USER_ID_HEADER] = user_id
+        sources = await pipe.list_sources(user_id)
+        return DocumentListModel(
+            user_id=user_id,
+            documents=[
+                DocumentModel(source=s.source, chunks=s.chunks) for s in sources
+            ],
+        )
+
     @app.delete("/documents", response_model=PurgeResponseModel)
     async def purge_documents(
         request: Request,
@@ -444,6 +482,31 @@ def create_app(
         response.headers[USER_ID_HEADER] = user_id
         await pipe.purge_user(user_id)
         return PurgeResponseModel(user_id=user_id)
+
+    @app.delete(
+        "/documents/{source:path}", response_model=DeleteDocumentResponseModel
+    )
+    async def delete_document(
+        source: str,
+        request: Request,
+        response: Response,
+        pipe: RagPipeline = Depends(get_pipeline),
+    ) -> DeleteDocumentResponseModel:
+        """Delete a single ingested source for the requesting user.
+
+        The source name is taken from the path (URL-encoded by the client). Only
+        the caller's own chunks for that source are removed, so two users with a
+        same-named file never clobber each other. Deleting a source that does not
+        exist is a no-op and still returns ``deleted`` (idempotent).
+        """
+
+        user_id = _resolve_user_id(request)
+        response.headers[USER_ID_HEADER] = user_id
+        cleaned = source.strip()
+        if not cleaned:
+            raise HTTPException(status_code=400, detail="No source provided")
+        await pipe.delete_source(cleaned, user_id=user_id)
+        return DeleteDocumentResponseModel(user_id=user_id, source=cleaned)
 
     @app.post("/chat", response_model=ChatResponseModel)
     async def chat(

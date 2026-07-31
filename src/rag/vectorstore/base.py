@@ -111,6 +111,20 @@ class QueryHit:
     score: float = 0.0
 
 
+@dataclass(frozen=True)
+class SourceInfo:
+    """One ingested source belonging to a user, plus how many chunks it holds.
+
+    Powers the "manage my documents" UI: a user needs to see which files are
+    currently referenced (and delete/re-upload them) without exposing the
+    per-chunk ids. ``chunks`` is the number of stored chunks derived from the
+    source, a rough proxy for its size/coverage.
+    """
+
+    source: str
+    chunks: int
+
+
 @runtime_checkable
 class VectorStore(Protocol):
     async def add(self, records: Sequence[ChunkRecord]) -> None:
@@ -148,6 +162,15 @@ class VectorStore(Protocol):
 
     async def delete_by_user(self, user_id: str) -> None:
         """Remove every record belonging to ``user_id`` ("delete all my data")."""
+        ...
+
+    async def list_sources(self, user_id: str) -> list["SourceInfo"]:
+        """Return the distinct sources ``user_id`` has ingested, with chunk counts.
+
+        Powers the document-management UI (list what a user has uploaded so it
+        can be deleted or re-uploaded). Only the caller's own sources are ever
+        returned; the result is empty for a user who has ingested nothing.
+        """
         ...
 
     async def delete_expired(self, cutoff_epoch: float) -> None:

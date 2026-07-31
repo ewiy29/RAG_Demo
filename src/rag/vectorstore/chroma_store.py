@@ -23,7 +23,7 @@ import asyncio
 from typing import Any, Sequence
 
 from ..errors import StoreError, StoreErrorCode
-from .base import ChunkMetadata, ChunkRecord, QueryHit
+from .base import ChunkMetadata, ChunkRecord, QueryHit, SourceInfo
 
 
 def _to_chroma_where(where: dict[str, Any] | None) -> dict[str, Any] | None:
@@ -161,6 +161,34 @@ class ChromaVectorStore:
                 context={"operation": "delete_by_user", "user_id": user_id},
                 message=f"Chroma delete_by_user failed: {exc}",
             ) from exc
+
+    async def list_sources(self, user_id: str) -> list[SourceInfo]:
+        # ``get`` (no query vector) fetches this user's stored chunks; we only
+        # need the metadata to group by source and count chunks per source.
+        try:
+            result = await asyncio.to_thread(
+                self._collection.get,
+                where={"user_id": user_id},
+                include=["metadatas"],
+            )
+        except Exception as exc:
+            raise StoreError(
+                StoreErrorCode.QUERY_FAILED,
+                context={"operation": "list_sources", "user_id": user_id},
+                message=f"Chroma list_sources failed: {exc}",
+            ) from exc
+
+        counts: dict[str, int] = {}
+        for meta in result.get("metadatas") or []:
+            source = str((meta or {}).get("source", ""))
+            if not source:
+                continue
+            counts[source] = counts.get(source, 0) + 1
+        # Stable, human-friendly ordering for the UI.
+        return [
+            SourceInfo(source=source, chunks=count)
+            for source, count in sorted(counts.items())
+        ]
 
     async def delete_expired(self, cutoff_epoch: float) -> None:
         # ``$lt`` is a native Chroma range operator, passed through directly

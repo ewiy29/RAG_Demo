@@ -158,6 +158,22 @@ curl -H "Content-Type: application/json" -H "X-User-Id: <your-id>" \
 
 Interactive docs are available at `http://127.0.0.1:8000/docs`.
 
+### Web UI
+
+A React (Vite + TypeScript + MUI) front end lives in [`frontend/`](frontend/):
+drag-and-drop upload, per-file management (list / delete / replace via
+`GET /documents` and `DELETE /documents/{source}`), and a grounded, cited chat
+over your documents (`/chat`). With the API running:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The dev server proxies API calls to `http://127.0.0.1:8000`, so there are no
+local CORS issues. See [`frontend/README.md`](frontend/README.md) for details.
+
 ---
 
 ## Configuration

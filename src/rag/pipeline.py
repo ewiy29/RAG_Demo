@@ -22,7 +22,7 @@ from .providers import build_providers
 from .providers.base import ChatMessage, ChatUsage, EmbeddingProvider, LLMProvider
 from .retrieve import RetrievedChunk, retrieve
 from .vectorstore import build_store
-from .vectorstore.base import VectorStore
+from .vectorstore.base import SourceInfo, VectorStore
 
 logger = get_logger("rag.pipeline")
 
@@ -301,6 +301,16 @@ class RagPipeline:
         if self.conversation_store is None:  # pragma: no cover - misconfiguration
             raise RuntimeError("list_conversations() requires a conversation_store")
         return await self.conversation_store.list_conversations(user_id)
+
+    async def list_sources(self, user_id: str) -> list[SourceInfo]:
+        """Return the distinct sources a user has ingested (for the UI)."""
+
+        return await self.store.list_sources(user_id)
+
+    async def delete_source(self, source: str, *, user_id: str) -> None:
+        """Delete a single ingested source for one user (per-file removal)."""
+
+        await self.store.delete_by_source(source, user_id=user_id)
 
     async def purge_user(self, user_id: str) -> None:
         """Delete all of a user's stored data ("delete all my data")."""
