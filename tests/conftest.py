@@ -1,24 +1,12 @@
 """Shared test configuration.
 
-Forces the fake provider and clears the settings cache so the entire suite runs
-offline with no API key and no network access.
+The suite runs fully offline by *injecting* the test doubles directly: the fake
+provider and the in-memory vector/conversation stores live under
+``tests/doubles`` (WS10) and are wired into a pipeline via
+``doubles.build_fake_pipeline`` (or constructed individually). Nothing is
+selected through the production factories or via config strings, so there is no
+environment mutation or settings cache to manage here. See ``test_retrieval.py``
+/ ``test_pipeline_integration.py`` for the injection pattern.
 """
 
 from __future__ import annotations
-
-import os
-
-import pytest
-
-os.environ.setdefault("RAG_PROVIDER", "fake")
-os.environ.setdefault("OPENAI_API_KEY", "")
-
-
-@pytest.fixture(autouse=True)
-def _fake_provider_env(monkeypatch):
-    monkeypatch.setenv("RAG_PROVIDER", "fake")
-    from rag.config import get_settings
-
-    get_settings.cache_clear()
-    yield
-    get_settings.cache_clear()

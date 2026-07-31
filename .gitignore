@@ -16,9 +16,6 @@ env/
 .chroma/
 *.sqlite3
 
-# Uploaded documents (runtime)
-uploads/
-
 # Test / tooling caches
 .pytest_cache/
 .mypy_cache/

@@ -1,4 +1,4 @@
-"""Unit tests for chunking: boundaries, overlap, and edge cases."""
+"""Unit tests for the recursive chunker: boundaries, overlap, structure, edges."""
 
 from __future__ import annotations
 
@@ -18,56 +18,6 @@ def test_short_text_fits_in_single_chunk():
     assert chunk_text(text, size=100, overlap=10) == ["the quick brown fox"]
 
 
-def test_each_chunk_respects_size_budget():
-    text = " ".join(f"word{i}" for i in range(50))
-    chunks = chunk_text(text, size=40, overlap=10)
-    assert len(chunks) > 1
-    for c in chunks:
-        assert len(c) <= 40
-
-
-def test_overlap_repeats_trailing_words_between_consecutive_chunks():
-    text = " ".join(f"w{i}" for i in range(30))
-    chunks = chunk_text(text, size=20, overlap=8)
-    assert len(chunks) >= 2
-    for prev, nxt in zip(chunks, chunks[1:]):
-        prev_words = prev.split()
-        nxt_words = nxt.split()
-        # The next chunk must begin by repeating one or more trailing words
-        # from the previous chunk (the overlap).
-        assert nxt_words[0] in prev_words
-
-
-def test_no_overlap_produces_disjoint_word_sequences():
-    text = " ".join(f"w{i}" for i in range(12))
-    chunks = chunk_text(text, size=10, overlap=0)
-    seen: list[str] = []
-    for c in chunks:
-        seen.extend(c.split())
-    # With zero overlap every word appears exactly once and order is preserved.
-    assert seen == text.split()
-
-
-def test_all_words_are_covered_in_order():
-    text = " ".join(f"token{i}" for i in range(40))
-    chunks = chunk_text(text, size=30, overlap=9)
-    # Reconstruct the ordered set of first-appearances; must equal the input.
-    seen: list[str] = []
-    for c in chunks:
-        for w in c.split():
-            if not seen or seen[-1] != w:
-                if w not in seen:
-                    seen.append(w)
-    assert seen == text.split()
-
-
-def test_word_longer_than_size_becomes_its_own_chunk():
-    long_word = "x" * 50
-    text = f"small {long_word} tail"
-    chunks = chunk_text(text, size=20, overlap=5)
-    assert long_word in chunks
-
-
 def test_invalid_parameters_raise():
     with pytest.raises(ValueError):
         chunk_text("hello", size=0, overlap=0)
@@ -77,9 +27,118 @@ def test_invalid_parameters_raise():
         chunk_text("hello", size=10, overlap=-1)
 
 
+# --- size as a hard cap -----------------------------------------------------
+
+
+def test_every_chunk_respects_size_budget():
+    text = " ".join(f"word{i}" for i in range(50))
+    chunks = chunk_text(text, size=40, overlap=10)
+    assert len(chunks) > 1
+    for chunk in chunks:
+        assert len(chunk) <= 40
+
+
+def test_size_is_a_hard_cap_even_with_large_overlap_and_long_words():
+    # Regression for the old word-packer bug: an overlap tail plus the next word
+    # could exceed ``size``. The recursive packer drops overlap units from the
+    # front until the incoming unit fits, so ``size`` stays a hard cap.
+    text = " ".join(f"{chr(ord('a') + i) * 12}" for i in range(6))
+    chunks = chunk_text(text, size=30, overlap=25)
+    assert len(chunks) > 1
+    for chunk in chunks:
+        assert len(chunk) <= 30
+
+
+# --- overlap ----------------------------------------------------------------
+
+
+def test_no_overlap_produces_disjoint_word_sequences():
+    text = " ".join(f"w{i}" for i in range(12))
+    chunks = chunk_text(text, size=10, overlap=0)
+    seen: list[str] = []
+    for chunk in chunks:
+        seen.extend(chunk.split())
+    assert seen == text.split()
+
+
+def test_overlap_repeats_a_trailing_sentence_between_chunks():
+    # One paragraph, three sentences; a budget that fits two sentences but not
+    # three forces a boundary, and the overlap carries a whole trailing sentence.
+    text = "Alpha one is here. Beta two follows. Gamma three ends it."
+    chunks = chunk_text(text, size=40, overlap=20)
+    assert len(chunks) == 2
+    for chunk in chunks:
+        assert len(chunk) <= 40
+    # The trailing sentence of chunk 0 is repeated at the start of chunk 1.
+    assert "Beta two follows." in chunks[0]
+    assert chunks[1].startswith("Beta two follows.")
+
+
+def test_all_words_are_covered_in_order():
+    text = " ".join(f"token{i}" for i in range(40))
+    chunks = chunk_text(text, size=30, overlap=9)
+    seen: list[str] = []
+    for chunk in chunks:
+        for word in chunk.split():
+            if word not in seen:
+                seen.append(word)
+    assert seen == text.split()
+
+
+# --- structure preservation -------------------------------------------------
+
+
+def test_paragraph_structure_and_interior_newlines_preserved_when_fitting():
+    text = "First line.\nSecond line.\n\nSecond paragraph here."
+    chunks = chunk_text(text, size=200, overlap=0)
+    assert chunks == [text]
+    # Blank-line paragraph break and interior single newline both survive.
+    assert "\n\n" in chunks[0]
+    assert "First line.\nSecond line." in chunks[0]
+
+
+def test_short_paragraphs_pack_together_up_to_budget():
+    text = "Para one.\n\nPara two.\n\nPara three."
+    packed = chunk_text(text, size=200, overlap=0)
+    assert packed == [text]
+
+    split = chunk_text(text, size=12, overlap=0)
+    assert split == ["Para one.", "Para two.", "Para three."]
+
+
+def test_sentences_pack_multiple_per_chunk_not_one_each():
+    text = "Alpha one is here. Beta two follows. Gamma three ends it."
+    chunks = chunk_text(text, size=40, overlap=0)
+    assert chunks == [
+        "Alpha one is here. Beta two follows.",
+        "Gamma three ends it.",
+    ]
+
+
+# --- oversized single token -------------------------------------------------
+
+
+def test_oversized_token_is_hard_split_into_size_bounded_pieces():
+    long_token = "x" * 50
+    text = f"small {long_token} tail"
+    chunks = chunk_text(text, size=20, overlap=5)
+    for chunk in chunks:
+        assert len(chunk) <= 20
+    # The neighbours survive as their own units...
+    assert "small" in chunks
+    assert "tail" in chunks
+    # ...and the oversized token is hard-split but fully reconstructable.
+    token_pieces = [chunk for chunk in chunks if set(chunk) == {"x"}]
+    assert "".join(token_pieces) == long_token
+
+
+# --- chunk_document ---------------------------------------------------------
+
+
 def test_chunk_document_assigns_source_and_sequential_indexes():
     doc = Document(source="doc.md", text=" ".join(f"w{i}" for i in range(30)))
     chunks = chunk_document(doc, size=20, overlap=5)
-    assert all(isinstance(c, Chunk) for c in chunks)
-    assert all(c.source == "doc.md" for c in chunks)
-    assert [c.chunk_index for c in chunks] == list(range(len(chunks)))
+    assert len(chunks) > 1
+    assert all(isinstance(chunk, Chunk) for chunk in chunks)
+    assert all(chunk.source == "doc.md" for chunk in chunks)
+    assert [chunk.chunk_index for chunk in chunks] == list(range(len(chunks)))

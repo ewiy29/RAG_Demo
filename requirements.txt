@@ -8,3 +8,8 @@ openai>=1.40
 pypdf>=4.2
 pydantic-settings>=2.3
 python-dotenv>=1.0
+# Conversation state (WS7): Redis hot layer + an in-process fakeredis fallback
+# so the no-install clone-and-run path works with no Redis server. SQLite (the
+# durable tier) is stdlib.
+redis>=5.0
+fakeredis>=2.21
