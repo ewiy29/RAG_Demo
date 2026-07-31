@@ -10,10 +10,11 @@ import { AppRoot, ContentPanel, HeaderBar, SidebarPanel } from "./AppLayout.styl
 interface AppLayoutProps {
   documents: ReactNode;
   chat: ReactNode;
+  userControl?: ReactNode;
 }
 
 /** Responsive two-pane shell: documents on the left, chat on the right. */
-export function AppLayout({ documents, chat }: AppLayoutProps) {
+export function AppLayout({ documents, chat, userControl }: AppLayoutProps) {
   return (
     <AppRoot>
       <HeaderBar position="static" color="default" elevation={0}>
@@ -22,9 +23,10 @@ export function AppLayout({ documents, chat }: AppLayoutProps) {
           <Typography variant="h6" component="h1" sx={{ flexGrow: 1 }}>
             RAG Demo
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" sx={{ mr: 2 }}>
             Grounded answers with citations
           </Typography>
+          {userControl}
         </Toolbar>
       </HeaderBar>
 

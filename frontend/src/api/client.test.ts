@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ApiError, api } from "./client";
+import {
+  ApiError,
+  addUser,
+  api,
+  ensureUserId,
+  getUserId,
+  getUserRoster,
+  switchUser,
+} from "./client";
 
 // Minimal stand-in for the parts of Response the client touches: headers.get,
 // ok/status, and json(). jsonThrows simulates a non-JSON error body.
@@ -141,6 +149,54 @@ describe("error handling", () => {
     expect(err.status).toBe(0);
     expect(err.domain).toBe("network");
     expect(err.code).toBe("UNREACHABLE");
+  });
+});
+
+describe("user roster", () => {
+  it("mints and persists an id (seeding the roster) when storage is empty", () => {
+    const id = ensureUserId();
+
+    expect(id).toBeTruthy();
+    expect(getUserId()).toBe(id);
+    expect(getUserRoster()).toContain(id);
+  });
+
+  it("is idempotent: ensureUserId returns the same id on repeated calls", () => {
+    const first = ensureUserId();
+    const second = ensureUserId();
+
+    expect(second).toBe(first);
+    expect(getUserRoster()).toEqual([first]);
+  });
+
+  it("getUserRoster always includes the active id", () => {
+    window.localStorage.setItem("rag.userId", "user-x");
+
+    expect(getUserRoster()).toContain("user-x");
+  });
+
+  it("addUser appends a new active id and starts a fresh conversation", () => {
+    const first = ensureUserId();
+    window.localStorage.setItem("rag.conversationId", "conv-1");
+
+    const second = addUser();
+
+    expect(second).not.toBe(first);
+    expect(getUserId()).toBe(second);
+    expect(getUserRoster()).toEqual([first, second]);
+    expect(window.localStorage.getItem("rag.conversationId")).toBeNull();
+  });
+
+  it("switchUser makes an existing id active and resets the conversation", () => {
+    const first = ensureUserId();
+    const second = addUser();
+    window.localStorage.setItem("rag.conversationId", "conv-2");
+
+    switchUser(first);
+
+    expect(getUserId()).toBe(first);
+    expect(getUserRoster()).toEqual([first, second]);
+    expect(window.localStorage.getItem("rag.conversationId")).toBeNull();
   });
 });
 

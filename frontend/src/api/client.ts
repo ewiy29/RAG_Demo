@@ -20,6 +20,7 @@ import type {
 const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
 const USER_ID_KEY = "rag.userId";
+const USER_ROSTER_KEY = "rag.userRoster";
 const CONVERSATION_ID_KEY = "rag.conversationId";
 const USER_ID_HEADER = "X-User-Id";
 const CONVERSATION_ID_HEADER = "X-Conversation-Id";
@@ -80,6 +81,97 @@ export function resetConversation(): void {
   } catch {
     // no-op
   }
+}
+
+// --- Demo tenancy roster --------------------------------------------------
+// A "switch user" affordance for the demo: several tenant GUIDs remembered
+// locally so uploading as one and switching to another shows per-user
+// document isolation. The backend accepts any client-supplied X-User-Id
+// (it's a tenant/correlation key, not auth), so we can mint ids client-side.
+
+/** Generate a fresh tenant GUID, preferring the platform crypto UUID. */
+function mintUserId(): string {
+  try {
+    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+      return crypto.randomUUID();
+    }
+  } catch {
+    // fall through to the manual hex id below
+  }
+  return Array.from({ length: 32 }, () =>
+    Math.floor(Math.random() * 16).toString(16),
+  ).join("");
+}
+
+function readRoster(): string[] {
+  try {
+    const raw = window.localStorage.getItem(USER_ROSTER_KEY);
+    const parsed = raw ? (JSON.parse(raw) as unknown) : [];
+    if (Array.isArray(parsed)) {
+      return parsed.filter((id): id is string => typeof id === "string" && !!id);
+    }
+  } catch {
+    // Corrupt/blocked storage: fall back to an empty roster.
+  }
+  return [];
+}
+
+function writeRoster(ids: string[]): void {
+  try {
+    window.localStorage.setItem(USER_ROSTER_KEY, JSON.stringify(ids));
+  } catch {
+    // Ignore storage failures; the roster just won't persist this session.
+  }
+}
+
+/**
+ * Return the remembered roster of tenant ids, always including the active id.
+ * Seeds a fresh id when there is no identity yet so callers get a non-empty
+ * roster to render.
+ */
+export function getUserRoster(): string[] {
+  const active = ensureUserId();
+  const roster = readRoster();
+  if (!roster.includes(active)) {
+    roster.unshift(active);
+    writeRoster(roster);
+  }
+  return roster;
+}
+
+/**
+ * Return the active tenant id, minting and persisting one (and seeding the
+ * roster) when the client has no identity yet. Makes identity deterministic
+ * on first load instead of waiting for the server to echo a minted id.
+ */
+export function ensureUserId(): string {
+  const existing = getUserId();
+  if (existing) {
+    return existing;
+  }
+  const minted = mintUserId();
+  writeStored(USER_ID_KEY, minted);
+  writeRoster([minted, ...readRoster().filter((id) => id !== minted)]);
+  return minted;
+}
+
+/** Make an existing roster id the active tenant, starting a fresh thread. */
+export function switchUser(id: string): void {
+  writeStored(USER_ID_KEY, id);
+  const roster = readRoster();
+  if (!roster.includes(id)) {
+    writeRoster([...roster, id]);
+  }
+  resetConversation();
+}
+
+/** Mint a brand-new tenant, add it to the roster, and make it active. */
+export function addUser(): string {
+  const id = mintUserId();
+  writeRoster([...readRoster(), id]);
+  writeStored(USER_ID_KEY, id);
+  resetConversation();
+  return id;
 }
 
 function withIdentityHeaders(init: RequestInit): RequestInit {

@@ -39,11 +39,33 @@ build with `npm run build` (output in `dist/`).
 ## How identity works
 
 The API is multi-tenant via an `X-User-Id` header (a correlation/tenant key,
-**not** authentication). On the first request the server mints an id and echoes
-it back; the client stores it in `localStorage` and reuses it, so your uploaded
-corpus and conversations persist across reloads. Chat threads are continued via
-the `X-Conversation-Id` header, also persisted; use the "new conversation"
-button to start a fresh thread.
+**not** authentication). The client seeds a tenant GUID on first load (the API
+also accepts any client-supplied id, minting one itself if absent), stores it in
+`localStorage`, and sends it on every request, so your uploaded corpus and
+conversations persist across reloads. Chat threads are continued via the
+`X-Conversation-Id` header, also persisted; use the "new conversation" button to
+start a fresh thread.
+
+### Demo: switching users to show isolation
+
+The header has a **user switcher** that lets you flip between a small roster of
+tenant GUIDs (`User 1`, `User 2`, ... plus `+ New user`). Each entry is a
+separate `X-User-Id`, so switching changes which tenant's corpus and
+conversations the API returns. Try it:
+
+1. Upload a document as `User 1`.
+2. Switch to a new user - the document list is empty (a different tenant).
+3. Switch back to `User 1` - the app clears its client cache and re-fetches
+   `GET /documents`, so your original document reappears.
+
+This visibly demonstrates that each user's uploads are isolated to that user.
+
+It is a **demo affordance, not authentication**: anyone can hand-set any
+`X-User-Id`, so this proves data partitioning, not a security boundary. In
+production, identity would arrive as a validated signed token (e.g. an
+OIDC/JWT bearer token) verified in the backend, with the tenant key extracted
+from a trusted claim rather than a client-asserted header - while managed
+identity handles service-to-service auth for the backend's own dependencies.
 
 ## Scripts
 
@@ -60,7 +82,7 @@ button to start a fresh thread.
 frontend/src/
 ├── api/            # typed API client (identity headers, error envelope) + types
 ├── hooks/          # TanStack Query hooks (documents, upload, delete, chat)
-├── components/     # AppLayout, FileDropzone, DocumentList, ChatPanel, MessageBubble, Citations
+├── components/     # AppLayout, UserSwitcher, FileDropzone, DocumentList, ChatPanel, MessageBubble, Citations
 ├── lib/            # error-code -> message mapping
 ├── theme.ts        # MUI theme
 ├── App.tsx

@@ -11,8 +11,7 @@ It is deliberately built to *look and behave like it could go to production*
 ids, async end-to-end, multi-tenancy, multi-turn chat) while shipping
 **lightweight, embedded implementations** you can clone and run locally with no
 infrastructure. Every seam is an interface with a documented production swap —
-credibility comes from the abstraction plus the write-up, not from standing up
-heavy infra. See [Scaling path](#scaling-path).
+see [Scaling path](#scaling-path).
 
 The entire test suite runs **offline with no API key**.
 
@@ -119,6 +118,10 @@ copy .env.example .env      # Windows;  use `cp` on macOS/Linux
 # then set OPENAI_API_KEY in .env  (not needed just to run the tests)
 ```
 
+> **Running locally?** The real service calls OpenAI, so set `OPENAI_API_KEY`
+> in your `.env` before starting the server. It is only unnecessary for the test
+> suite, which runs fully offline against the fake provider.
+
 ### HTTP API
 
 ```bash
@@ -135,11 +138,14 @@ is no CLI.
   instead of failing the whole batch.
 - `POST /ask` `{ "query": "..." }` → answer, verified citations, retrieved
   chunks, usage, latency (stateless, one-shot).
-- `POST /chat` `{ "query": "..." }` → same shape, but multi-turn: send an
-  `X-Conversation-Id` header to continue a thread.
+- `POST /chat` `{ "query": "..." }` → same shape plus a `conversation_id`, but
+  multi-turn: send an `X-Conversation-Id` header to continue a thread.
+- `GET /documents` → list the caller's ingested sources with per-source chunk
+  counts (drives the manage-files UI).
+- `DELETE /documents/{source}` → delete a single ingested source (idempotent).
+- `DELETE /documents` → "delete all my data" for the caller's uploaded corpus.
 - `GET /conversations`, `GET /conversations/{id}`, `DELETE /conversations` →
   list / read / purge the caller's conversation history.
-- `DELETE /documents` → "delete all my data" for the caller's uploaded corpus.
 
 **Identity / tenancy.** Every request carries a `user_id` supplied via the
 `X-User-Id` header; if absent, the server mints one and echoes it back (in the
@@ -186,6 +192,10 @@ All settings are environment variables (prefix `RAG_`, except the standard
 | `OPENAI_API_KEY` | – | OpenAI key (required to run the real service). |
 | `RAG_CHAT_MODEL` | `gpt-4o-mini` | Chat model. |
 | `RAG_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model. |
+| `RAG_CHAT_TEMPERATURE` | `0.0` | Sampling temperature (0 = deterministic, the right default for grounded RAG). |
+| `RAG_REQUEST_TIMEOUT_SECONDS` | `30.0` | Per-request timeout for provider calls. |
+| `RAG_MAX_RETRIES` | `2` | Retries on transient 429/5xx (SDK native backoff). |
+| `RAG_EMBEDDING_BATCH_SIZE` | `100` | Texts per embeddings call (batches large ingests). |
 | `RAG_PERSIST_DIR` | `.chroma` | Chroma persistence directory. |
 | `RAG_COLLECTION` | `rag_demo` | Chroma collection name. |
 | `RAG_MAX_UPLOAD_BYTES` | `10485760` | Largest single upload accepted (10 MiB). |
@@ -255,11 +265,10 @@ story without a scheduler.
 
 **No-persistence ingestion.** Uploaded files are chunked and embedded entirely
 in memory and are **never written to disk** — only the derived vectors (Chroma)
-are durable, so the raw upload bytes are disposable once ingested. This keeps app
-servers stateless and closes two gaps a disk staging area would open (orphaned
-staged files, and raw copies surviving `DELETE /documents` / TTL cleanup). If
-retaining originals is ever needed, stream them to object storage (S3 / Azure
-Blob / GCS) behind an interface — never local disk or a relational DB.
+are durable. This keeps app servers stateless and closes two gaps a disk staging
+area would open: orphaned staged files, and raw copies surviving
+`DELETE /documents` / TTL cleanup. Retaining originals is a documented swap (see
+[Scaling path](#scaling-path)).
 
 **Conversation state = KV/session (Redis hot + durable).** Multi-turn history is
 an append / read-last-N / expire-on-TTL access pattern — a key-value/session

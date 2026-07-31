@@ -1,12 +1,18 @@
 # Runtime dependencies. Install with: pip install -r requirements.txt
 # (For development/tests, also install: pytest httpx  -- see requirements-dev.txt)
-fastapi>=0.111
-python-multipart>=0.0.9
-uvicorn>=0.30
-chromadb>=0.5
-openai>=1.40
-pypdf>=4.2
-pydantic-settings>=2.3
+fastapi>=0.115
+# >=0.0.18 fixes a denial-of-service (CVE-2024-53981) in multipart parsing.
+python-multipart>=0.0.18
+uvicorn>=0.34
+# Embedded as a PersistentClient (never the network server), so the unpatched
+# pre-auth RCE in Chroma's FastAPI server (CVE-2026-45829) does not apply here.
+chromadb>=1.0
+openai>=1.99
+pypdf>=5.0
+# Imported directly (rag.api, rag.config); declared explicitly rather than
+# relying on it arriving transitively via fastapi/pydantic-settings.
+pydantic>=2.9
+pydantic-settings>=2.5
 python-dotenv>=1.0
 # Conversation state (WS7): Redis hot layer + an in-process fakeredis fallback
 # so the no-install clone-and-run path works with no Redis server. SQLite (the
