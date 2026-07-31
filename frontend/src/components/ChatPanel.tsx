@@ -8,7 +8,7 @@ import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutlined";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import SendIcon from "@mui/icons-material/Send";
 
-import { resetConversation } from "../api/client";
+import { useUser } from "../context/UserContext";
 import { useChat } from "../hooks/useChat";
 import { errorMessage } from "../lib/errorMessage";
 import { EmptyState } from "../styles/shared";
@@ -21,6 +21,7 @@ const makeId = () => `m${nextId++}`;
 /** Right pane: the multi-turn chat over the user's uploaded documents. */
 export function ChatPanel() {
   const chat = useChat();
+  const { resetConversation } = useUser();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);

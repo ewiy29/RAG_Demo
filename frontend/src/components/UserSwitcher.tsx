@@ -8,7 +8,7 @@ import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 
-import { getUserRoster } from "../api/client";
+import { useUser } from "../context/UserContext";
 import { ShortId, SwitcherButton, SwitcherLabel } from "./UserSwitcher.styled";
 
 interface UserSwitcherProps {
@@ -32,9 +32,9 @@ export function UserSwitcher({
 }: UserSwitcherProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const open = Boolean(anchorEl);
-  // Read synchronously on render; a change to activeUserId re-runs this so the
+  // Roster comes from context; a change to the active id re-renders this so the
   // roster (including a just-added user) stays in sync with the active id.
-  const roster = getUserRoster();
+  const { roster } = useUser();
   const activeIndex = roster.indexOf(activeUserId);
 
   const openMenu = (e: MouseEvent<HTMLElement>) => setAnchorEl(e.currentTarget);

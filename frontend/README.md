@@ -39,12 +39,18 @@ build with `npm run build` (output in `dist/`).
 ## How identity works
 
 The API is multi-tenant via an `X-User-Id` header (a correlation/tenant key,
-**not** authentication). The client seeds a tenant GUID on first load (the API
-also accepts any client-supplied id, minting one itself if absent), stores it in
-`localStorage`, and sends it on every request, so your uploaded corpus and
-conversations persist across reloads. Chat threads are continued via the
-`X-Conversation-Id` header, also persisted; use the "new conversation" button to
-start a fresh thread.
+**not** authentication). Identity lives in a single React context
+(`src/context/UserContext.tsx`); nothing else reads or writes storage. The
+provider seeds a tenant GUID on first load (the API also accepts any
+client-supplied id, minting one itself if absent) and persists only the tenant
+id and user roster to `localStorage` -- read once on load to hydrate the
+context, and written back when you switch/add a user -- so your uploaded corpus
+persists across reloads.
+
+Chat threads are continued via the `X-Conversation-Id` header, but the
+conversation id is kept **in memory only** (context state, never `localStorage`):
+it resets on reload or when you switch users. Use the "new conversation" button
+to start a fresh thread.
 
 ### Demo: switching users to show isolation
 

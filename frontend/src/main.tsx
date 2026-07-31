@@ -5,6 +5,7 @@ import { ThemeProvider } from "@mui/material/styles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import App from "./App";
+import { UserProvider } from "./context/UserContext";
 import { theme } from "./theme";
 
 const queryClient = new QueryClient({
@@ -26,10 +27,12 @@ if (!rootEl) {
 ReactDOM.createRoot(rootEl).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline />
-        <App />
-      </ThemeProvider>
+      <UserProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <App />
+        </ThemeProvider>
+      </UserProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 );

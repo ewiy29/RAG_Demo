@@ -1,14 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  ApiError,
-  addUser,
-  api,
-  ensureUserId,
-  getUserId,
-  getUserRoster,
-  switchUser,
-} from "./client";
+import { ApiError, api } from "./client";
 
 // Minimal stand-in for the parts of Response the client touches: headers.get,
 // ok/status, and json(). jsonThrows simulates a non-JSON error body.
@@ -45,7 +37,6 @@ function makeResponse(options: {
 const fetchMock = vi.fn();
 
 beforeEach(() => {
-  window.localStorage.clear();
   fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });
@@ -61,55 +52,54 @@ function headersOf(callIndex = 0): Headers {
 }
 
 describe("identity headers", () => {
-  it("attaches the stored X-User-Id on requests", async () => {
-    window.localStorage.setItem("rag.userId", "user-123");
+  it("attaches the supplied X-User-Id on requests", async () => {
     fetchMock.mockResolvedValue(makeResponse({ json: { documents: [] } }));
 
-    await api.listDocuments();
+    await api.listDocuments({ userId: "user-123" });
 
     expect(headersOf().get("X-User-Id")).toBe("user-123");
   });
 
-  it("omits X-User-Id when nothing is stored", async () => {
+  it("omits X-User-Id when no identity is supplied", async () => {
     fetchMock.mockResolvedValue(makeResponse({ json: { documents: [] } }));
 
     await api.listDocuments();
 
     expect(headersOf().get("X-User-Id")).toBeNull();
   });
-
-  it("captures echoed user and conversation ids into storage", async () => {
-    fetchMock.mockResolvedValue(
-      makeResponse({
-        headers: {
-          "X-User-Id": "server-user",
-          "X-Conversation-Id": "conv-9",
-        },
-        json: { answer: "hi" },
-      }),
-    );
-
-    await api.chat("hello");
-
-    expect(window.localStorage.getItem("rag.userId")).toBe("server-user");
-    expect(window.localStorage.getItem("rag.conversationId")).toBe("conv-9");
-  });
 });
 
 describe("chat", () => {
-  it("sends the stored conversation id, JSON content type and body", async () => {
-    window.localStorage.setItem("rag.conversationId", "conv-42");
+  it("sends the supplied conversation id, JSON content type and body", async () => {
     fetchMock.mockResolvedValue(makeResponse({ json: { answer: "ok" } }));
 
-    await api.chat("what is up");
+    await api.chat("what is up", {
+      userId: "user-1",
+      conversationId: "conv-42",
+    });
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/chat");
     expect(init.method).toBe("POST");
     const headers = new Headers(init.headers);
+    expect(headers.get("X-User-Id")).toBe("user-1");
     expect(headers.get("X-Conversation-Id")).toBe("conv-42");
     expect(headers.get("Content-Type")).toBe("application/json");
     expect(init.body).toBe(JSON.stringify({ query: "what is up" }));
+  });
+
+  it("returns the conversation id echoed by the server", async () => {
+    fetchMock.mockResolvedValue(
+      makeResponse({
+        headers: { "X-Conversation-Id": "conv-9" },
+        json: { answer: "hi" },
+      }),
+    );
+
+    const result = await api.chat("hello", { userId: "user-1" });
+
+    expect(result.conversationId).toBe("conv-9");
+    expect(result.data).toEqual({ answer: "hi" });
   });
 });
 
@@ -149,54 +139,6 @@ describe("error handling", () => {
     expect(err.status).toBe(0);
     expect(err.domain).toBe("network");
     expect(err.code).toBe("UNREACHABLE");
-  });
-});
-
-describe("user roster", () => {
-  it("mints and persists an id (seeding the roster) when storage is empty", () => {
-    const id = ensureUserId();
-
-    expect(id).toBeTruthy();
-    expect(getUserId()).toBe(id);
-    expect(getUserRoster()).toContain(id);
-  });
-
-  it("is idempotent: ensureUserId returns the same id on repeated calls", () => {
-    const first = ensureUserId();
-    const second = ensureUserId();
-
-    expect(second).toBe(first);
-    expect(getUserRoster()).toEqual([first]);
-  });
-
-  it("getUserRoster always includes the active id", () => {
-    window.localStorage.setItem("rag.userId", "user-x");
-
-    expect(getUserRoster()).toContain("user-x");
-  });
-
-  it("addUser appends a new active id and starts a fresh conversation", () => {
-    const first = ensureUserId();
-    window.localStorage.setItem("rag.conversationId", "conv-1");
-
-    const second = addUser();
-
-    expect(second).not.toBe(first);
-    expect(getUserId()).toBe(second);
-    expect(getUserRoster()).toEqual([first, second]);
-    expect(window.localStorage.getItem("rag.conversationId")).toBeNull();
-  });
-
-  it("switchUser makes an existing id active and resets the conversation", () => {
-    const first = ensureUserId();
-    const second = addUser();
-    window.localStorage.setItem("rag.conversationId", "conv-2");
-
-    switchUser(first);
-
-    expect(getUserId()).toBe(first);
-    expect(getUserRoster()).toEqual([first, second]);
-    expect(window.localStorage.getItem("rag.conversationId")).toBeNull();
   });
 });
 

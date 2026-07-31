@@ -84,7 +84,12 @@ describe("DocumentList", () => {
 
     await user.click(screen.getByRole("button", { name: /^Delete$/ }));
 
-    await waitFor(() => expect(deleteDocument).toHaveBeenCalledWith("a.md"));
+    await waitFor(() =>
+      expect(deleteDocument).toHaveBeenCalledWith(
+        "a.md",
+        expect.objectContaining({ userId: expect.any(String) }),
+      ),
+    );
     // onSuccess invalidates the documents query -> a refetch fires.
     await waitFor(() => expect(listDocuments).toHaveBeenCalledTimes(2));
   });

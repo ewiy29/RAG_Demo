@@ -3,6 +3,7 @@ import { render, type RenderOptions } from "@testing-library/react";
 import { ThemeProvider } from "@mui/material/styles";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { UserProvider } from "../context/UserContext";
 import { theme } from "../theme";
 
 /** Fresh QueryClient per render with retries off so failing queries surface
@@ -30,7 +31,9 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider theme={theme}>{children}</ThemeProvider>
+        <UserProvider>
+          <ThemeProvider theme={theme}>{children}</ThemeProvider>
+        </UserProvider>
       </QueryClientProvider>
     );
   }

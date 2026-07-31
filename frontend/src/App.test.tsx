@@ -5,9 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "./test/utils";
 import type { DocumentListResponse } from "./api/types";
 
-// Mock only the network boundary; keep the identity helpers (ensureUserId,
-// addUser, switchUser, getUserId, getUserRoster) real so the switch wiring is
-// genuinely exercised.
+// Mock only the network boundary; identity now lives in the real UserProvider
+// (seeded via localStorage below) so the switch wiring is genuinely exercised.
 vi.mock("./api/client", async (importActual) => {
   const actual = await importActual<typeof import("./api/client")>();
   return {
@@ -21,7 +20,7 @@ vi.mock("./api/client", async (importActual) => {
   };
 });
 
-import { api, getUserId } from "./api/client";
+import { api } from "./api/client";
 import App from "./App";
 
 const listDocuments = vi.mocked(api.listDocuments);
@@ -37,13 +36,15 @@ beforeEach(() => {
 
   // Documents are scoped by the active tenant id; User A owns "a.md",
   // every other (freshly minted) user owns nothing.
-  listDocuments.mockImplementation(async (): Promise<DocumentListResponse> => {
-    const id = getUserId();
-    return {
-      user_id: id,
-      documents: id === USER_A ? [{ source: "a.md", chunks: 1 }] : [],
-    };
-  });
+  listDocuments.mockImplementation(
+    async (identity): Promise<DocumentListResponse> => {
+      const id = identity?.userId ?? "";
+      return {
+        user_id: id,
+        documents: id === USER_A ? [{ source: "a.md", chunks: 1 }] : [],
+      };
+    },
+  );
 });
 
 describe("App user switching", () => {
