@@ -20,9 +20,27 @@ from .base import ChatResult, ChatUsage
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _DEFAULT_DIM = 256
 
+# A small English stopword list. Real embedding models learn to down-weight
+# these; our toy hashing embedder would otherwise let ubiquitous words like
+# "the"/"is"/"of" dominate cosine similarity, so we drop them for embeddings.
+_STOPWORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "been", "being", "by", "can",
+    "did", "do", "does", "for", "from", "had", "has", "have", "he", "her",
+    "here", "his", "how", "i", "in", "into", "is", "it", "its", "me", "my",
+    "no", "not", "of", "on", "once", "only", "or", "our", "over", "own",
+    "she", "so", "some", "such", "than", "that", "the", "their", "them",
+    "then", "there", "these", "they", "this", "those", "to", "too", "under",
+    "up", "very", "was", "we", "were", "what", "when", "where", "which",
+    "who", "whom", "why", "will", "with", "you", "your",
+}
+
 
 def _tokenize(text: str) -> list[str]:
     return _TOKEN_RE.findall(text.lower())
+
+
+def _content_tokens(text: str) -> list[str]:
+    return [t for t in _tokenize(text) if t not in _STOPWORDS]
 
 
 def _hash_bucket(token: str, dim: int) -> int:
@@ -39,7 +57,7 @@ class FakeEmbeddingProvider:
 
     def _embed_one(self, text: str) -> list[float]:
         vec = [0.0] * self.dim
-        for token in _tokenize(text):
+        for token in _content_tokens(text):
             vec[_hash_bucket(token, self.dim)] += 1.0
         norm = math.sqrt(sum(v * v for v in vec))
         if norm > 0:
