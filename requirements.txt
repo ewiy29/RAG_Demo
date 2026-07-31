@@ -1,0 +1,9 @@
+# Runtime dependencies. Install with: pip install -r requirements.txt
+# (For development/tests, also install: pytest httpx  -- see requirements-dev.txt)
+fastapi>=0.111
+uvicorn>=0.30
+chromadb>=0.5
+openai>=1.40
+pypdf>=4.2
+pydantic-settings>=2.3
+python-dotenv>=1.0
