@@ -76,7 +76,7 @@ async def test_within_limit_upload_still_ingests():
 async def test_ingest_writes_nothing_to_disk(monkeypatch, tmp_path):
     # No-persistence contract: /ingest must process uploads entirely in memory.
     # Fail loudly if anything tries to stage a raw upload on disk.
-    def _no_writes(self, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003
+    def _no_writes(self, *args, **kwargs):
         raise AssertionError(f"unexpected disk write to {self}")
 
     monkeypatch.setattr(pathlib.Path, "write_bytes", _no_writes)

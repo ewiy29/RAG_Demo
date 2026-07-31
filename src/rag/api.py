@@ -30,14 +30,14 @@ from __future__ import annotations
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
-from pydantic import BaseModel, Field
 
 from .config import Settings, get_settings
 from .documents import SUPPORTED_EXTENSIONS
@@ -414,7 +414,7 @@ def create_app(
         response.headers[USER_ID_HEADER] = user_id
         # /ask is stateless (single-shot). A conversation id, if present, is
         # only logged for correlation here; multi-turn history lives on /chat.
-        conversation_id: Optional[str] = (
+        conversation_id: str | None = (
             request.headers.get(CONVERSATION_ID_HEADER, "").strip() or None
         )
         resp = await pipe.ask(

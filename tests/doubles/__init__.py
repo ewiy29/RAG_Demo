@@ -22,8 +22,8 @@ from .in_memory_store import InMemoryVectorStore
 __all__ = [
     "FakeEmbeddingProvider",
     "FakeLLMProvider",
-    "InMemoryVectorStore",
     "InMemoryConversationStore",
+    "InMemoryVectorStore",
     "build_fake_pipeline",
 ]
 

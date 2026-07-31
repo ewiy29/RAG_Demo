@@ -11,7 +11,6 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from .config import Settings, get_settings
 from .conversation import ConversationStore, Message, build_conversation_store
@@ -95,7 +94,7 @@ class RagPipeline:
         query: str,
         *,
         user_id: str,
-        conversation_id: Optional[str] = None,
+        conversation_id: str | None = None,
     ) -> AskResponse:
         # ``conversation_id`` is a WS7 scaffold: it is accepted and logged for
         # correlation now, but multi-turn history/rewriting is not yet wired.
@@ -324,7 +323,7 @@ class RagPipeline:
             raise RuntimeError("purge_conversations() requires a conversation_store")
         await self.conversation_store.delete_by_user(user_id)
 
-    async def cleanup_expired(self, ttl_seconds: Optional[int] = None) -> None:
+    async def cleanup_expired(self, ttl_seconds: int | None = None) -> None:
         """Remove per-user data older than the TTL (on-demand, no scheduler).
 
         ``ttl_seconds`` defaults to ``settings.session_ttl_seconds``. This is

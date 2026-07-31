@@ -31,7 +31,6 @@ from rag.providers.openai_provider import (
     _map_openai_error,
 )
 
-
 # --- fakes for the injected AsyncOpenAI client --------------------------------
 
 

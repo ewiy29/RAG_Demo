@@ -7,8 +7,8 @@ generator refuses to answer rather than grounding on irrelevant text.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from .providers.base import ChatMessage, EmbeddingProvider, LLMProvider
 from .vectorstore.base import VectorStore

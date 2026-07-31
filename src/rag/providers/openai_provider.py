@@ -22,7 +22,8 @@ Hardening (WS9):
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any
 
 from ..errors import ProviderError, ProviderErrorCode
 from .base import ChatMessage, ChatResult, ChatUsage
@@ -36,7 +37,7 @@ def build_openai_client(
     *,
     timeout: float,
     max_retries: int,
-) -> "AsyncOpenAI":
+) -> AsyncOpenAI:
     """Construct a single shared ``AsyncOpenAI`` client.
 
     The empty-key guard lives here so both providers fail the same way, and so
@@ -102,7 +103,7 @@ def _map_openai_error(exc: Exception, *, operation: str, model: str) -> Provider
 class OpenAIEmbeddingProvider:
     def __init__(
         self,
-        client: "AsyncOpenAI",
+        client: AsyncOpenAI,
         *,
         model: str,
         batch_size: int = 100,
@@ -136,7 +137,7 @@ class OpenAIEmbeddingProvider:
 class OpenAILLMProvider:
     def __init__(
         self,
-        client: "AsyncOpenAI",
+        client: AsyncOpenAI,
         *,
         model: str,
         temperature: float = 0.0,

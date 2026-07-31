@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
+import itertools
+
 from doubles import FakeEmbeddingProvider, InMemoryVectorStore
 from rag.config import Settings
 from rag.ingest import ingest_paths
 from rag.retrieve import retrieve
 
-
 USER = "user-under-test"
 
 
 def _settings(**overrides) -> Settings:
-    base = dict(chunk_size=1000, chunk_overlap=0)
+    base = {"chunk_size": 1000, "chunk_overlap": 0}
     base.update(overrides)
     return Settings(**base)
 
@@ -41,7 +42,7 @@ async def test_ranks_more_relevant_chunk_first(tmp_path):
     assert results, "expected at least one hit"
     assert "cats.md" in results[0].source
     # Scores are sorted descending.
-    assert all(a.score >= b.score for a, b in zip(results, results[1:]))
+    assert all(a.score >= b.score for a, b in itertools.pairwise(results))
 
 
 async def test_threshold_excludes_low_similarity_hits(tmp_path):

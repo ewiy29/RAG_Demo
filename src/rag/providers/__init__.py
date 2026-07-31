@@ -18,8 +18,8 @@ into the pipeline rather than selecting it via a config string.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from ..config import Settings
 from .base import ChatResult, ChatUsage, EmbeddingProvider, LLMProvider

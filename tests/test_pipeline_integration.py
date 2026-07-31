@@ -70,12 +70,11 @@ async def test_api_ingest_then_ask_grounded_and_refusal():
 
     async with _async_client(create_app(pipeline=pipe)) as client:
         # Ingest the water fixture via multipart upload.
-        with open(FIXTURES / "water.md", "rb") as fh:
-            r = await client.post(
-                "/ingest",
-                files={"files": ("water.md", fh.read(), "text/markdown")},
-                headers=headers,
-            )
+        r = await client.post(
+            "/ingest",
+            files={"files": ("water.md", (FIXTURES / "water.md").read_bytes(), "text/markdown")},
+            headers=headers,
+        )
         assert r.status_code == 200
         assert r.json()["chunks"] >= 1
         assert r.json()["user_id"] == USER

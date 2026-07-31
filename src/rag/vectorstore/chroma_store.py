@@ -20,7 +20,8 @@ which runs once at startup (outside any request), not per call.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from ..errors import StoreError, StoreErrorCode
 from .base import ChunkMetadata, ChunkRecord, QueryHit, SourceInfo

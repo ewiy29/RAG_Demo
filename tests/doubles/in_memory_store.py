@@ -19,8 +19,9 @@ server-grade store (unshared, in-process, lost on restart).
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any
 
 from rag.vectorstore.base import ChunkMetadata, ChunkRecord, QueryHit, SourceInfo
 

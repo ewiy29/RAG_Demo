@@ -26,18 +26,17 @@ def _async_client(app) -> httpx.AsyncClient:
 
 
 def _settings(**overrides) -> Settings:
-    base = dict(top_k=4, min_score=0.2)
+    base = {"top_k": 4, "min_score": 0.2}
     base.update(overrides)
     return Settings(**base)
 
 
 async def _ingest(client, filename: str, user: str) -> None:
-    with open(FIXTURES / filename, "rb") as fh:
-        r = await client.post(
-            "/ingest",
-            files={"files": (filename, fh.read(), "text/markdown")},
-            headers={"X-User-Id": user},
-        )
+    r = await client.post(
+        "/ingest",
+        files={"files": (filename, (FIXTURES / filename).read_bytes(), "text/markdown")},
+        headers={"X-User-Id": user},
+    )
     assert r.status_code == 200
 
 

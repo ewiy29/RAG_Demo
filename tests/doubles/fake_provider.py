@@ -19,7 +19,7 @@ import hashlib
 import json
 import math
 import re
-from typing import Sequence
+from collections.abc import Sequence
 
 from rag.providers.base import ChatMessage, ChatResult, ChatUsage
 

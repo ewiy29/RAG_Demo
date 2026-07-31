@@ -42,8 +42,9 @@ Contract every backend must honour
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,7 @@ class ChunkMetadata:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ChunkMetadata":
+    def from_dict(cls, data: dict[str, Any]) -> ChunkMetadata:
         """Build from a stored dict, raising on a missing/invalid schema.
 
         A malformed metadata dict is a corruption signal, not something to
@@ -164,7 +165,7 @@ class VectorStore(Protocol):
         """Remove every record belonging to ``user_id`` ("delete all my data")."""
         ...
 
-    async def list_sources(self, user_id: str) -> list["SourceInfo"]:
+    async def list_sources(self, user_id: str) -> list[SourceInfo]:
         """Return the distinct sources ``user_id`` has ingested, with chunk counts.
 
         Powers the document-management UI (list what a user has uploaded so it

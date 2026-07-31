@@ -26,7 +26,10 @@ from __future__ import annotations
 
 import json
 
+from ..logging_utils import get_logger
 from .base import DurableConversationBackend, Message, conversation_key
+
+logger = get_logger("rag.conversation.redis")
 
 _SCAN_COUNT = 100
 
@@ -62,10 +65,10 @@ class RedisConversationStore:
                 await client.ping()
                 self._client = client
                 return self._client
-            except Exception:
+            except Exception as exc:
                 # Unreachable/misconfigured Redis: fall back to the in-process
                 # fake so clone-and-run still works (same redis-py API).
-                pass
+                logger.warning("redis unavailable (%s); falling back to fakeredis", exc)
 
         from fakeredis import aioredis as fakeredis_aioredis
 

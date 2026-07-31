@@ -28,7 +28,7 @@ def _async_client(app) -> httpx.AsyncClient:
 
 
 def _settings(**overrides) -> Settings:
-    base = dict(top_k=4, min_score=0.2)
+    base = {"top_k": 4, "min_score": 0.2}
     base.update(overrides)
     return Settings(**base)
 
@@ -38,10 +38,10 @@ async def test_api_ingest_mints_and_echoes_user_id():
 
     async with _async_client(create_app(pipeline=pipe)) as client:
         # No X-User-Id header -> the server mints one and echoes it back.
-        with open(FIXTURES / "water.md", "rb") as fh:
-            r = await client.post(
-                "/ingest", files={"files": ("water.md", fh.read(), "text/markdown")}
-            )
+        r = await client.post(
+            "/ingest",
+            files={"files": ("water.md", (FIXTURES / "water.md").read_bytes(), "text/markdown")},
+        )
         assert r.status_code == 200
         minted = r.json()["user_id"]
         assert minted
@@ -53,12 +53,11 @@ async def test_api_isolation_between_users():
 
     async with _async_client(create_app(pipeline=pipe)) as client:
         # User A uploads the water fixture.
-        with open(FIXTURES / "water.md", "rb") as fh:
-            await client.post(
-                "/ingest",
-                files={"files": ("water.md", fh.read(), "text/markdown")},
-                headers={"X-User-Id": "user-a"},
-            )
+        await client.post(
+            "/ingest",
+            files={"files": ("water.md", (FIXTURES / "water.md").read_bytes(), "text/markdown")},
+            headers={"X-User-Id": "user-a"},
+        )
 
         # User A can retrieve/ground on it.
         a = (
@@ -87,12 +86,13 @@ async def test_api_purge_deletes_only_requesting_user():
 
     async with _async_client(create_app(pipeline=pipe)) as client:
         for user in ("user-a", "user-b"):
-            with open(FIXTURES / "water.md", "rb") as fh:
-                await client.post(
-                    "/ingest",
-                    files={"files": ("water.md", fh.read(), "text/markdown")},
-                    headers={"X-User-Id": user},
-                )
+            await client.post(
+                "/ingest",
+                files={
+                    "files": ("water.md", (FIXTURES / "water.md").read_bytes(), "text/markdown")
+                },
+                headers={"X-User-Id": user},
+            )
 
         # Purge user A's data.
         purged = await client.request(

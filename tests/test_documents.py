@@ -27,7 +27,7 @@ def _make_pdf(body_text: str) -> bytes:
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
         b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] "
-        b"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+        + b"/Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
         b"<< /Length %d >>\nstream\n%s\nendstream" % (len(stream), stream),
         b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
     ]
@@ -45,7 +45,7 @@ def _make_pdf(body_text: str) -> bytes:
     pdf += b"xref\n0 %d\n" % total
     pdf += b"0000000000 65535 f \n"
     for offset in offsets:
-        pdf += ("%010d 00000 n \n" % offset).encode("latin-1")
+        pdf += f"{offset:010d} 00000 n \n".encode("latin-1")
     pdf += b"trailer\n<< /Size %d /Root 1 0 R >>\n" % total
     pdf += b"startxref\n%d\n%%%%EOF" % xref_offset
     return bytes(pdf)

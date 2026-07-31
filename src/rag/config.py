@@ -113,7 +113,7 @@ class Settings(BaseSettings):
         return normalised
 
     @model_validator(mode="after")
-    def _validate_chunk_relationship(self) -> "Settings":
+    def _validate_chunk_relationship(self) -> Settings:
         """Overlap must be strictly smaller than the chunk size to make progress."""
 
         if self.chunk_overlap >= self.chunk_size:
